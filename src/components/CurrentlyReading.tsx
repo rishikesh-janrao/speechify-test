@@ -7,30 +7,46 @@
  *
  * See example.gif for an example of how the component should look like, feel free to style it however you want as long as the testID exists
  */
+import "../App.css";
 export const CurrentlyReading = ({
-  currentWordRange,
-  currentSentenceIdx,
-  sentences,
+  currentWordRange = [0, 0],
+  currentSentenceIdx = 0,
+  sentences = [],
 }: {
   currentWordRange: [number, number];
   currentSentenceIdx: number;
   sentences: string[];
 }) => {
-  const getCurrentSentence = () => {
-    let currSentence = sentences[currentSentenceIdx];
-    const currentWord = currSentence.substring(...currentWordRange);
-    currSentence = currSentence.replace(
-      currentWord,
-      `<span class="currentword>${currSentence}</span>`
-    );
-    return currSentence;
-  };
+  let currSentence = sentences[currentSentenceIdx];
+  const currentWord = currSentence?.substring(...currentWordRange);
+  const FirstHalf = () => <>{currSentence.substring(0, currentWordRange[0])}</>;
+  const SecondHalf = () => (
+    <>
+      {currSentence.substring(
+        currentWordRange[0] + currentWordRange[1],
+        currSentence.length
+      )}
+    </>
+  );
+  const CurrentWord = () => (
+    <span className="currentword" data-testid="current-word">
+      {currentWord}
+    </span>
+  );
+
   return (
-    <div
-      data-testid="currently-reading"
-      dangerouslySetInnerHTML={{
-        __html: getCurrentSentence(),
-      }}
-    ></div>
+    <div>
+      {currentWord && (
+        <div data-testid="current-sentence">
+          <FirstHalf />
+          <CurrentWord />
+          <SecondHalf />
+        </div>
+      )}
+
+      {sentences.map((e) => (
+        <span key={e}>{e}</span>
+      ))}
+    </div>
   );
 };

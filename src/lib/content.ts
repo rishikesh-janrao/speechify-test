@@ -15,14 +15,31 @@ const fetchContent = async (url = API_URL): Promise<string> => {
  * Avoid using DOMParser for implementing this function.
  */
 const parseContentIntoSentences = (content: string): Array<string> => {
-  return content
-    .replaceAll("<speak>", "")
-    .replaceAll("</speak>", "")
-    .replaceAll("<p>", "")
-    .replaceAll("</p>", "")
-    .replaceAll("<s>", "")
-    .split("</s>")
-    .filter((e) => e !== "");
+  if (content.includes("<speak>") && content.includes("</speak>")) {
+    const ssml = document.createElement("speak");
+    const withoutSpeakTag = content
+      .replace("<speak>", "")
+      .replace("</speak>", "");
+    const withoutPtag = withoutSpeakTag.includes("<p>")
+      ? withoutSpeakTag.replaceAll("<p>", "").replaceAll("</p>", "")
+      : withoutSpeakTag;
+    ssml.innerHTML = withoutPtag;
+    let sentences: string[] = [];
+    let totalSentences = ssml.children.length;
+    while (totalSentences !== 0) {
+      totalSentences--;
+      const text = ssml.children.item(totalSentences)?.textContent;
+      text?.replaceAll("<s>", "").replaceAll("</s>", "\n");
+      if (text) sentences.push(text);
+    }
+    sentences = sentences.reverse();
+
+    return sentences;
+  }
+  else {
+    const error = new Error("This is not valid ssml")
+    throw(error)
+  }
 };
 
 export { fetchContent, parseContentIntoSentences };

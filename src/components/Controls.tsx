@@ -21,10 +21,12 @@ export const Controls = ({
 }) => {
   return (
     <div>
-      <button onClick={state === "playing" ? pause : play}>
+      <button
+        onClick={state === "playing" ? pause : play}
+      >
         {state === "playing" ? "Pause" : "Play"}
       </button>
-      <button onClick={loadNewContent}>Load New Content</button>
+      <button onClick={loadNewContent}>Load new content</button>
     </div>
   );
 };

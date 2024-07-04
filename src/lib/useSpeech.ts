@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import { PlayingState, createSpeechEngine } from "./speech";
-import { fetchContent } from "./content";
 
 /*
   @description
@@ -11,31 +10,73 @@ import { fetchContent } from "./content";
   This hook should return react friendly controls for playing, and pausing audio as well as provide information about
   the currently read word and sentence
 */
+let currentSentenceIdx = 0;
 const useSpeech = (sentences: Array<string>) => {
-  const onBoundary = (e: SpeechSynthesisEvent) => {};
-  const onEnd = (e: SpeechSynthesisEvent) => {};
-  const onStateUpdate = (state: PlayingState) => {};
-  const { load, cancel } = createSpeechEngine({
+  // const [currentSentenceIdx, setCurrentSentenceIdx] = useState(0);
+  const [currentWordRange, setCurrentWordRange] = useState([0, 0]);
+
+  const [playbackState, setPlaybackState] =
+    useState<PlayingState>("paused");
+
+  const onBoundary = (e: SpeechSynthesisEvent) => {
+    setCurrentWordRange(() => [e.charIndex, e.charIndex + e.charLength]);
+  };
+  const onEnd = async (e: SpeechSynthesisEvent) => {
+    setPlaybackState("ended");
+    if (currentSentenceIdx <= sentences.length - 1) {
+      load(sentences[currentSentenceIdx]);
+      playSpeech();
+      setPlaybackState("playing");
+    } else {
+      currentSentenceIdx = 0;
+    }
+  };
+  const onStateUpdate = (state: PlayingState) => {
+    setPlaybackState(state);
+    if (state === "ended" && currentSentenceIdx <= sentences.length - 1) {
+      currentSentenceIdx++;
+    }
+  };
+  const {
+    play: playSpeech,
+    pause: pauseSpeech,
+    load,
+    cancel,
+  } = createSpeechEngine({
     onBoundary,
     onEnd,
     onStateUpdate,
   });
-  const allSentences = sentences;
-  const [currentSentenceIdx, setCurrentSentenceIdx] = useState(0);
-  const [currentWordRange, setCurrentWordRange] = useState([0, 0]);
-
-  const [playbackState, setPlaybackState] = useState<PlayingState>("paused");
 
   const play = () => {
-    if (!["playing"].includes(playbackState)){
-      setPlaybackState("playing")
-      allSentences.forEach((sentence, index) => {
-        setCurrentSentenceIdx(index);
-      });
+    let currentSentence = "";
+    if (sentences && playbackState !== "ended") {
+      // first time play
+      setPlaybackState("initialized");
+      currentSentence = sentences[currentSentenceIdx];
+      load(currentSentence);
+      playSpeech();
+      setPlaybackState("playing");
+    }
+    if (playbackState === "paused") {
+      const remainingSentence = currentSentence.substring(
+        currentWordRange[0],
+        currentSentence.length
+      );
+      load(remainingSentence);
+      playSpeech();
+    }
+    if (playbackState === "ended") {
+      setPlaybackState((state) => "playing");
+      currentSentenceIdx = 0;
+      load(sentences[currentSentenceIdx]);
+      playSpeech();
+      setPlaybackState("playing");
     }
   };
   const pause = () => {
-    setPlaybackState("paused")
+    pauseSpeech();
+    setPlaybackState("paused");
   };
 
   return {
